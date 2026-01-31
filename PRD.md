@@ -2,7 +2,7 @@
 
 **Project Name:** FormBuddy  
 **Pillar:** Accessibility  
-**Objective:** Provide a real-time, voice-first fitness companion that analyzes user exercise form through the camera, provides corrective feedback, and encourages users using AI-generated voice (ElevenLabs).
+**Objective:** Provide a real-time, voice-first fitness companion that analyzes user exercise form through the camera, provides corrective feedback, predicts potential fatigue or mistakes using AI (Presage), and encourages users using AI-generated voice (ElevenLabs).
 
 ---
 
@@ -10,7 +10,10 @@
 
 Many beginners, neurodivergent users, and people with gym anxiety struggle with text-heavy or visual fitness instructions. Traditional apps rely on screens and text feedback, creating **barriers to inclusion**.
 
-**Solution:** A web-based app that uses **camera-based pose detection** and **AI-driven voice feedback** to guide exercises, correct form, and encourage users in real-time.
+**Solution:** A web-based app that uses:
+- **Camera-based pose detection** to monitor exercise form.
+- **AI-driven voice feedback** (ElevenLabs) to correct and encourage users.
+- **Predictive analytics** (Presage) to anticipate mistakes, fatigue, or form deterioration, helping users exercise safely.
 
 ---
 
@@ -46,19 +49,28 @@ Many beginners, neurodivergent users, and people with gym anxiety struggle with 
   - Example: “You’re doing great! Keep it up!”
 - Optionally adjust **tone or voice style** for user preference.
 
-### 2.6 Voice Feedback (ElevenLabs Integration)
-- Convert feedback text into speech in real-time.
+### 2.6 Predictive Analytics (Presage Integration)
+- Track user movement patterns, speed, and posture over time.
+- Use Presage SDK to **predict potential fatigue or form mistakes** before they happen.
+- Provide proactive voice suggestions:
+  - Example: “Take a short break to avoid fatigue”  
+  - Example: “Your posture may weaken after the next rep, slow down”
+- Enhances **safety and accessibility**, reducing risk of injury.
+
+### 2.7 Voice Feedback (ElevenLabs Integration)
+- Convert feedback text and Presage predictions into speech in real-time.
 - Play audio through the browser.
 - Optional: Let users select from 2–3 voices (calm, energetic, neutral).
 
-### 2.7 User Interface (UI)
+### 2.8 User Interface (UI)
 - Webcam feed prominently displayed.
 - Exercise selection menu.
 - Start / Stop button.
 - Optional: Display text feedback visually for clarity.
 
-### 2.8 Real-Time Updates
+### 2.9 Real-Time Updates
 - Feedback should occur **within 1–2 seconds** of pose change.
+- Presage predictions updated periodically (every few reps).
 - Ensure continuous audio cues do not overlap (queue system).
 
 ---
@@ -70,10 +82,11 @@ Many beginners, neurodivergent users, and people with gym anxiety struggle with 
 | Performance               | Real-time pose detection at ≥15 FPS                                         |
 | Compatibility             | Modern browsers (Chrome, Edge, Safari)                                     |
 | Accessibility             | Voice-first interface, optional visual text feedback                       |
+| Safety                    | Predictive analytics warn of fatigue or incorrect form                      |
 | Scalability               | Designed for single-user demo; scalable if multi-user supported in future |
 | Security & Privacy        | Camera feed processed locally; no images or videos stored                  |
-| Reliability               | Audio playback should not freeze or overlap with new feedback              |
-| Maintainability           | Modular code for exercises, feedback, and TTS components                   |
+| Reliability               | Audio playback and Presage predictions should not freeze or overlap        |
+| Maintainability           | Modular code for exercises, feedback, TTS, and Presage components          |
 
 ---
 
@@ -89,18 +102,24 @@ Many beginners, neurodivergent users, and people with gym anxiety struggle with 
 - Detects body keypoints in real-time
 - Calculates angles via JavaScript
 
-### 4.3 Backend (Optional for MVP)
-- Not required for hackathon MVP (client-side only)
-- Could store user preferences in the future
+### 4.3 Predictive Analytics
+- **Presage Physiology SDK** integration for user fatigue and mistake prediction
+- Analyze motion patterns, rep speed, and posture trends
+- Generate proactive voice/text suggestions
 
-### 4.4 Voice Integration
+### 4.4 Backend (Optional for MVP)
+- Not required for hackathon MVP (client-side only)
+- Could store user preferences, exercise history, or Presage predictions in the future
+
+### 4.5 Voice Integration
 - ElevenLabs TTS API (REST or JS SDK)
-- Convert feedback text → speech
+- Convert feedback and predictions into speech
 - Play audio dynamically in-browser
 
-### 4.5 Libraries / Dependencies
+### 4.6 Libraries / Dependencies
 - TensorFlow.js
 - ElevenLabs API SDK
+- Presage API SDK / REST integration
 - Optional: Tone.js or Howler.js for audio control
 - Optional: Bootstrap or TailwindCSS for UI styling
 
@@ -112,10 +131,11 @@ Many beginners, neurodivergent users, and people with gym anxiety struggle with 
 2. Select Exercise → Start Workout  
 3. Pose Detection → Real-time Analysis  
 4. Generate Feedback → Voice Playback  
-5. Continuous Loop → Encourage + Correct  
-6. End Exercise → Optionally Save Session Stats  
+5. Predictive Analytics → Presage provides proactive suggestions  
+6. Continuous Loop → Encourage + Correct + Safety Suggestions  
+7. End Exercise → Optionally Save Session Stats  
 
-*Optional Diagram:* Webcam → Pose Detection → Analysis → Text Feedback → ElevenLabs TTS → User Audio
+*Optional Diagram:* Webcam → Pose Detection → Analysis → Feedback → Presage Prediction → ElevenLabs TTS → User Audio
 
 ---
 
@@ -129,7 +149,8 @@ Many beginners, neurodivergent users, and people with gym anxiety struggle with 
 - Integrate ElevenLabs TTS API
 - Play real-time voice feedback
 
-### Phase 2: Enhancements
+### Phase 2: Presage & Enhancements
+- Integrate Presage SDK for predictive fatigue/mistake analytics
 - Add additional exercises
 - Rep counting
 - Voice personality selection
@@ -140,15 +161,17 @@ Many beginners, neurodivergent users, and people with gym anxiety struggle with 
 - Test real-time responsiveness
 - Validate angle thresholds
 - Ensure audio timing is natural
-- Ensure user experience is intuitive
+- Test Presage predictions and their audio alerts
+- Ensure user experience is intuitive and safe
 
 ---
 
 ## 7. Deliverables for Hackathon
-- Functional web app demonstrating **voice-first form correction**
+- Functional web app demonstrating **voice-first form correction with predictive safety suggestions**
 - Demo script highlighting:
   - Accessibility impact
   - Voice encouragement
+  - Presage-powered safety predictions
   - Real-time correction
 - Technical documentation for judges
 
@@ -159,13 +182,13 @@ Many beginners, neurodivergent users, and people with gym anxiety struggle with 
 - Camera feed processed in-browser (privacy-friendly)
 - Voice feedback limited to short phrases for latency
 - Only safe, beginner-friendly exercises included
-- MVP prioritizes accessibility & clarity over AI perfection
+- MVP prioritizes accessibility, clarity, and safety over AI perfection
 
 ---
 
 ## 9. Future Scope (Beyond Hackathon)
 - Additional exercises & difficulty levels
 - Personalized training plans
-- Integration with wearable devices
+- Integration with wearable devices for better Presage predictions
 - Multi-user / social features
 - Adaptive AI feedback based on past performance
