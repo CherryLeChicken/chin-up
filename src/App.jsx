@@ -5,7 +5,6 @@ import ControlPanel from './components/ControlPanel'
 import FeedbackDisplay from './components/FeedbackDisplay'
 import VoiceSettingsIcon from './components/VoiceSettingsIcon'
 import MusicIcon from './components/MusicIcon'
-import ApiKeyTester from './components/ApiKeyTester'
 import Onboarding from './components/Onboarding'
 import { VOICE_PERSONALITY, VOICE_GENDER } from './hooks/useVoiceFeedback'
 import { useBackgroundMusic } from './hooks/useBackgroundMusic'
@@ -145,8 +144,6 @@ function App() {
               onToggle={setIsActive}
               hasExercise={!!selectedExercise}
             />
-
-            <ApiKeyTester />
 
             <FeedbackDisplay feedback={feedback} />
 
