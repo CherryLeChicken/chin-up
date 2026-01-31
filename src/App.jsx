@@ -1,71 +1,74 @@
-import { useState, useEffect } from 'react'
-import CameraFeed from './components/CameraFeed'
-import ExerciseSelector from './components/ExerciseSelector'
-import ControlPanel from './components/ControlPanel'
-import FeedbackDisplay from './components/FeedbackDisplay'
-import VoiceSettingsIcon from './components/VoiceSettingsIcon'
-import MusicIcon from './components/MusicIcon'
-import Onboarding from './components/Onboarding'
-import { VOICE_PERSONALITY, VOICE_GENDER } from './hooks/useVoiceFeedback'
-import { useBackgroundMusic } from './hooks/useBackgroundMusic'
+import { useState, useEffect } from "react";
+import CameraFeed from "./components/CameraFeed";
+import ExerciseSelector from "./components/ExerciseSelector";
+import ControlPanel from "./components/ControlPanel";
+import FeedbackDisplay from "./components/FeedbackDisplay";
+import VoiceSettingsIcon from "./components/VoiceSettingsIcon";
+import MusicIcon from "./components/MusicIcon";
+import ApiKeyTester from "./components/ApiKeyTester";
+import Onboarding from "./components/Onboarding";
+import { VOICE_PERSONALITY, VOICE_GENDER } from "./hooks/useVoiceFeedback";
+import { useBackgroundMusic } from "./hooks/useBackgroundMusic";
 
 function App() {
-  const [onboardingComplete, setOnboardingComplete] = useState(false)
-  const [onboardingData, setOnboardingData] = useState(null)
-  const [selectedExercise, setSelectedExercise] = useState(null)
-  const [hoveredExercise, setHoveredExercise] = useState(null)
-  const [isActive, setIsActive] = useState(false)
-  const [feedback, setFeedback] = useState('')
-  const [repCount, setRepCount] = useState(0)
-  const [voicePersonality, setVoicePersonality] = useState(VOICE_PERSONALITY.NEUTRAL)
-  const [voiceGender, setVoiceGender] = useState(VOICE_GENDER.MALE)
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [onboardingData, setOnboardingData] = useState(null);
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [hoveredExercise, setHoveredExercise] = useState(null);
+  const [isActive, setIsActive] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [repCount, setRepCount] = useState(0);
+  const [voicePersonality, setVoicePersonality] = useState(
+    VOICE_PERSONALITY.NEUTRAL,
+  );
+  const [voiceGender, setVoiceGender] = useState(VOICE_GENDER.MALE);
 
   // Check if onboarding has been completed
   useEffect(() => {
-    const savedOnboarding = localStorage.getItem('onboarding')
+    const savedOnboarding = localStorage.getItem("onboarding");
     if (savedOnboarding) {
       try {
-        const data = JSON.parse(savedOnboarding)
-        setOnboardingData(data)
-        setOnboardingComplete(true)
+        const data = JSON.parse(savedOnboarding);
+        setOnboardingData(data);
+        setOnboardingComplete(true);
       } catch (error) {
-        console.error('Error parsing onboarding data:', error)
-        localStorage.removeItem('onboarding')
+        console.error("Error parsing onboarding data:", error);
+        localStorage.removeItem("onboarding");
       }
     }
-  }, [])
+  }, []);
 
   const handleOnboardingComplete = (data) => {
-    setOnboardingData(data)
-    setOnboardingComplete(true)
-  }
+    setOnboardingData(data);
+    setOnboardingComplete(true);
+  };
 
   const handlePreferencesUpdate = (updatedData) => {
-    setOnboardingData(updatedData)
-  }
+    setOnboardingData(updatedData);
+  };
 
-  const { 
-    playMusic, 
-    stopMusic, 
+  const {
+    playMusic,
+    stopMusic,
     togglePlay,
     updateVolume,
     toggleMute,
     isMuted,
     volume,
-    isPlaying, 
-    isLoading, 
+    isPlaying,
+    isLoading,
     error: musicError,
     currentPrompt,
-    audioData
-  } = useBackgroundMusic()
+    audioData,
+  } = useBackgroundMusic();
 
   // Show onboarding if not completed
   if (!onboardingComplete) {
-    return <Onboarding onComplete={handleOnboardingComplete} />
+    return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#0B132B]">
+    <div className="min-h-screen bg-[#0B132B] app-wave">
       {/* Background texture overlay */}
       <div className="fixed inset-0 opacity-5 pointer-events-none">
         <div
@@ -86,7 +89,7 @@ function App() {
             onPersonalitySelect={setVoicePersonality}
             onGenderSelect={setVoiceGender}
           />
-          <MusicIcon 
+          <MusicIcon
             playMusic={playMusic}
             stopMusic={stopMusic}
             togglePlay={togglePlay}
@@ -108,7 +111,9 @@ function App() {
             CHIN UP
           </h1>
           <p className="text-[#FDF8FF] text-lg font-body">
-            {onboardingData?.name ? `Keep your chin up, ${onboardingData.name}!` : 'Voice-guided fitness companion powered by AI'}
+            {onboardingData?.name
+              ? `Keep your chin up, ${onboardingData.name}!`
+              : "Voice-guided fitness companion powered by AI"}
           </p>
         </header>
 
@@ -144,6 +149,8 @@ function App() {
               onToggle={setIsActive}
               hasExercise={!!selectedExercise}
             />
+
+            <ApiKeyTester />
 
             <FeedbackDisplay feedback={feedback} />
 

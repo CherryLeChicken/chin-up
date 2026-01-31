@@ -8,6 +8,34 @@
     color: #fdf8ff;
     @apply font-body antialiased;
   }
+
+  /* Decorative background wave as a class so it can be applied to the app container (not the body),
+     which prevents it from being covered by the app's own background color. */
+  .app-wave {
+    /* Use a relative path so Vite treats the asset correctly during dev/build */
+    background-image: url("../assets/background-wave2.png");
+    background-repeat: no-repeat;
+    /* center and span full viewport width */
+    background-position: bottom center;
+    background-size: 100% auto;
+    background-attachment: fixed;
+    /* ensure the image covers horizontal space without repeating */
+    background-origin: padding-box;
+  }
+
+  /* Keep header above the decorative background */
+  header {
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Adjust wave placement/size on small screens to avoid overlapping content */
+  @media (max-width: 640px) {
+    .app-wave {
+      background-position: bottom center;
+      background-size: 120% auto;
+    }
+  }
 }
 
 @layer utilities {
@@ -38,7 +66,6 @@
     animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
-
 
 @keyframes pulse-slow {
   0%,
