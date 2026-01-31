@@ -144,13 +144,70 @@ const FEEDBACK_VARIANTS = {
 }
 
 /**
- * Get a variant of feedback based on history
+ * Get Presage-adapted feedback variants
+ * Adds encouraging variants when breathing is erratic or user needs support
+ */
+function getPresageAdaptedVariants(feedbackKey, breathingRate, breathingConsistency, signalConfidence) {
+  const baseVariants = FEEDBACK_VARIANTS[feedbackKey] || []
+  
+  // If breathing is erratic, add more encouraging/supportive variants
+  if (breathingConsistency === 'erratic') {
+    const encouragingSuffixes = [
+      ' Take your time and breathe',
+      ' Focus on steady breathing',
+      ' Remember to breathe steadily',
+      ' Keep your breathing controlled'
+    ]
+    
+    // Add encouraging variants for form corrections
+    if (feedbackKey.includes('too-straight') || feedbackKey.includes('too-shallow') || 
+        feedbackKey.includes('alignment') || feedbackKey.includes('back')) {
+      return baseVariants.map(v => {
+        // Add encouraging note to some variants
+        const shouldAdd = Math.random() > 0.5
+        return shouldAdd && !v.includes('breathe') ? v + '. Take your time' : v
+      })
+    }
+  }
+  
+  // If breathing is fast, add calming reminders
+  if (breathingRate === 'fast') {
+    if (feedbackKey.includes('encouragement') || feedbackKey.includes('great') || feedbackKey.includes('good')) {
+      const calmingVariants = [
+        'Great work! Keep your breathing steady',
+        'Nice! Remember to breathe smoothly',
+        'Good job! Focus on controlled breathing',
+        'Excellent! Keep that steady pace'
+      ]
+      return [...baseVariants, ...calmingVariants]
+    }
+  }
+  
+  // If signal confidence is low, use simpler, clearer feedback
+  if (signalConfidence === 'low') {
+    // Prefer shorter, clearer variants
+    return baseVariants.filter(v => v.length < 60).length > 0 
+      ? baseVariants.filter(v => v.length < 60)
+      : baseVariants
+  }
+  
+  return baseVariants
+}
+
+/**
+ * Get a variant of feedback based on history and Presage data
  * @param {string} feedbackKey - The key identifying the feedback type
  * @param {Array} recentFeedback - Array of recent feedback keys (most recent first)
- * @returns {string} - A variant of the feedback message
+ * @param {string} breathingRate - 'slow', 'normal', or 'fast'
+ * @param {string} breathingConsistency - 'steady' or 'erratic'
+ * @param {string} signalConfidence - 'low', 'medium', or 'high'
+ * @returns {string} - A variant of the feedback message, adapted based on Presage data
  */
-export function getFeedbackVariant(feedbackKey, recentFeedback = []) {
-  const variants = FEEDBACK_VARIANTS[feedbackKey]
+export function getFeedbackVariant(feedbackKey, recentFeedback = [], breathingRate = null, breathingConsistency = null, signalConfidence = null) {
+  // Get Presage-adapted variants
+  const variants = (breathingRate || breathingConsistency || signalConfidence)
+    ? getPresageAdaptedVariants(feedbackKey, breathingRate, breathingConsistency, signalConfidence)
+    : FEEDBACK_VARIANTS[feedbackKey]
   
   if (!variants || variants.length === 0) {
     return null

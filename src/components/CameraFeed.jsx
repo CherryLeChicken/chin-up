@@ -139,11 +139,17 @@ export default function CameraFeed({
 
       if (analysis.feedback && !analysis.feedback.toLowerCase().includes("position yourself")) {
         const now = Date.now();
-        if (now - lastFeedbackTimeRef.current > FEEDBACK_INTERVAL) {
-          // Extract feedback key and get variant
+        
+        // Calculate adaptive feedback interval based on signal confidence
+        // Lower confidence = longer intervals (less frequent feedback)
+        const confidenceMultiplier = signalConfidence === 'low' ? 1.5 : signalConfidence === 'medium' ? 1.2 : 1.0
+        const adaptiveInterval = FEEDBACK_INTERVAL * confidenceMultiplier
+        
+        if (now - lastFeedbackTimeRef.current > adaptiveInterval) {
+          // Extract feedback key and get variant (with Presage adaptation)
           const feedbackKey = extractFeedbackKey(analysis.feedback);
           const variantFeedback = feedbackKey 
-            ? getFeedbackVariant(feedbackKey, feedbackHistoryRef.current)
+            ? getFeedbackVariant(feedbackKey, feedbackHistoryRef.current, breathingRate, breathingConsistency, signalConfidence)
             : analysis.feedback;
 
           // Only speak if we got a valid variant (not null)
