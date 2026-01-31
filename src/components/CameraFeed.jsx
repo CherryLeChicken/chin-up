@@ -3,6 +3,7 @@ import { usePoseDetection } from "../hooks/usePoseDetection";
 import { useFormAnalysis } from "../hooks/useFormAnalysis";
 import { useVoiceFeedback } from "../hooks/useVoiceFeedback";
 import { usePresage } from "../hooks/usePresage";
+import { getFeedbackVariant, extractFeedbackKey } from "../lib/feedbackVariants";
 
 export default function CameraFeed({ 
   exercise, 
@@ -29,6 +30,7 @@ export default function CameraFeed({
 
   const lastFeedbackTimeRef = useRef(0);
   const lastDetectionLogTimeRef = useRef(0);
+  const feedbackHistoryRef = useRef([]); // Track recent feedback keys (max 10)
   const FEEDBACK_INTERVAL = 2000; // 2 seconds between feedback
 
   const { detectPose, keypoints, isLoading } = usePoseDetection();
@@ -52,6 +54,11 @@ export default function CameraFeed({
       onRepCountUpdate(repCount);
     }
   }, [repCount, onRepCountUpdate]);
+
+  // Reset feedback history when exercise changes
+  useEffect(() => {
+    feedbackHistoryRef.current = [];
+  }, [exercise]);
 
   // Initialize camera
   useEffect(() => {
@@ -133,11 +140,24 @@ export default function CameraFeed({
       if (analysis.feedback && !analysis.feedback.toLowerCase().includes("position yourself")) {
         const now = Date.now();
         if (now - lastFeedbackTimeRef.current > FEEDBACK_INTERVAL) {
-          onFeedback(analysis.feedback);
-          if (analysis.feedback.trim()) {
-            speak(analysis.feedback, breathingRate, breathingConsistency, signalConfidence);
+          // Extract feedback key and get variant
+          const feedbackKey = extractFeedbackKey(analysis.feedback);
+          const variantFeedback = feedbackKey 
+            ? getFeedbackVariant(feedbackKey, feedbackHistoryRef.current)
+            : analysis.feedback;
+
+          // Only speak if we got a valid variant (not null)
+          if (variantFeedback) {
+            // Update feedback history (keep last 10 entries)
+            feedbackHistoryRef.current = [feedbackKey, ...feedbackHistoryRef.current].slice(0, 10);
+            
+            onFeedback(variantFeedback);
+            if (variantFeedback.trim()) {
+              speak(variantFeedback, breathingRate, breathingConsistency, signalConfidence);
+            }
+            lastFeedbackTimeRef.current = now;
           }
-          lastFeedbackTimeRef.current = now;
+          // If variant is null (too many repeats), skip this feedback
         }
       }
     }

@@ -28,11 +28,8 @@ const ALL_EXERCISES = [
   
   // Arms exercises - No equipment
   { id: "push-up", name: "Push-up", icon: "💪", targets: ["arms", "upper-body", "core", "full-body", "cardio"], equipment: ["none"] },
+  { id: "knee-pushup", name: "Knee Push-up", icon: "💪", targets: ["arms", "upper-body", "core"], equipment: ["none"] },
   { id: "arm-circles", name: "Arm Circles", icon: "🌀", targets: ["arms", "upper-body"], equipment: ["none"] },
-  { id: "diamond-pushup", name: "Diamond Push-ups", icon: "💎", targets: ["arms", "upper-body", "core"], equipment: ["none"] },
-  { id: "wide-pushup", name: "Wide Push-ups", icon: "💪", targets: ["arms", "upper-body", "core"], equipment: ["none"] },
-  { id: "pike-pushup", name: "Pike Push-ups", icon: "⬆️", targets: ["arms", "upper-body"], equipment: ["none"] },
-  { id: "incline-pushup", name: "Incline Push-ups", icon: "📐", targets: ["arms", "upper-body"], equipment: ["none"] },
   
   // Arms exercises - Dumbbells
   { id: "bicep-curl", name: "Bicep Curls", icon: "💪", targets: ["arms"], equipment: ["dumbbells"] },
@@ -51,15 +48,11 @@ const ALL_EXERCISES = [
   
   // Arms exercises - Chair/bench
   { id: "tricep-dip", name: "Tricep Dips", icon: "💪", targets: ["arms", "upper-body"], equipment: ["chair-bench"] },
-  { id: "incline-pushup-chair", name: "Incline Push-ups", icon: "📐", targets: ["arms", "upper-body"], equipment: ["chair-bench"] },
-  { id: "decline-pushup", name: "Decline Push-ups", icon: "📉", targets: ["arms", "upper-body", "core"], equipment: ["chair-bench"] },
   { id: "chair-dips", name: "Chair Dips", icon: "🪑", targets: ["arms"], equipment: ["chair-bench"] },
   
   // Upper Body exercises - No equipment
-  { id: "push-up-upper", name: "Push-ups", icon: "💪", targets: ["upper-body", "arms", "core"], equipment: ["none"] },
-  { id: "plank-to-pushup", name: "Plank to Push-up", icon: "🔥", targets: ["upper-body", "core"], equipment: ["none"] },
-  { id: "superman", name: "Superman", icon: "🦸", targets: ["upper-body", "core"], equipment: ["none"] },
   { id: "wall-pushup", name: "Wall Push-ups", icon: "🧱", targets: ["upper-body", "arms"], equipment: ["none"] },
+  { id: "superman", name: "Superman", icon: "🦸", targets: ["upper-body", "core"], equipment: ["none"] },
   
   // Upper Body exercises - Dumbbells
   { id: "chest-press", name: "Chest Press", icon: "💪", targets: ["upper-body"], equipment: ["dumbbells"] },
@@ -74,10 +67,6 @@ const ALL_EXERCISES = [
   { id: "band-row", name: "Band Rows", icon: "🎯", targets: ["upper-body"], equipment: ["resistance-bands"] },
   { id: "band-chest-fly", name: "Band Chest Fly", icon: "🎯", targets: ["upper-body"], equipment: ["resistance-bands"] },
   
-  // Upper Body exercises - Chair/bench
-  { id: "tricep-dip-upper", name: "Tricep Dips", icon: "💪", targets: ["upper-body", "arms"], equipment: ["chair-bench"] },
-  { id: "incline-pushup-upper", name: "Incline Push-ups", icon: "📐", targets: ["upper-body", "arms"], equipment: ["chair-bench"] },
-  { id: "decline-pushup-upper", name: "Decline Push-ups", icon: "📉", targets: ["upper-body", "arms", "core"], equipment: ["chair-bench"] },
   
   // Core exercises - No equipment
   { id: "plank", name: "Plank", icon: "🔥", targets: ["core", "full-body"], equipment: ["none"] },
