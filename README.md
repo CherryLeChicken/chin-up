@@ -1,4 +1,4 @@
-# FormBuddy - Voice-Guided Fitness Companion
+# Chin Up - Voice-Guided Fitness Companion
 
 A real-time, voice-first fitness companion that analyzes exercise form through the camera, provides corrective feedback, and encourages users using AI-generated voice.
 
@@ -18,22 +18,26 @@ A real-time, voice-first fitness companion that analyzes exercise form through t
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd gym
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Set up environment variables:
+
 ```bash
 cp .env.example .env
 ```
 
 Edit `.env` and add your ElevenLabs API key:
+
 ```
 VITE_ELEVENLABS_API_KEY=your_api_key_here
 ```
@@ -43,6 +47,7 @@ VITE_ELEVENLABS_API_KEY=your_api_key_here
 ## Development
 
 Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -84,6 +89,7 @@ gym/
 ## Current Phase (Phase 1)
 
 ✅ **Completed:**
+
 - HTML/CSS layout with modern, accessible design
 - Webcam feed integration
 - Basic pose detection using TensorFlow.js MoveNet
@@ -101,8 +107,8 @@ gym/
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
+| Variable                  | Description                | Required                          |
+| ------------------------- | -------------------------- | --------------------------------- |
 | `VITE_ELEVENLABS_API_KEY` | ElevenLabs API key for TTS | No (falls back to Web Speech API) |
 
 ## Browser Compatibility
@@ -114,16 +120,19 @@ gym/
 ## Troubleshooting
 
 **Camera not working:**
+
 - Ensure you've granted camera permissions
 - Check that no other application is using the camera
 - Try refreshing the page
 
 **Pose detection not working:**
+
 - Ensure good lighting
 - Stand at an appropriate distance from the camera
 - Make sure your full body is visible
 
 **Voice feedback not playing:**
+
 - Check browser console for errors
 - If using ElevenLabs, verify your API key is correct
 - The app will automatically fall back to Web Speech API if ElevenLabs fails

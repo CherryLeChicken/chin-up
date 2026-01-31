@@ -2,7 +2,7 @@
 
 ## System Architecture
 
-FormBuddy is a client-side web application built with React and Vite. All processing happens in the browser for privacy and performance.
+Chin Up is a client-side web application built with React and Vite. All processing happens in the browser for privacy and performance.
 
 ## Component Architecture
 
@@ -31,16 +31,19 @@ FormBuddy is a client-side web application built with React and Vite. All proces
 ## Custom Hooks
 
 ### usePoseDetection
+
 - Initializes TensorFlow.js MoveNet detector
 - Provides `detectPose()` function
 - Returns detected keypoints
 
 ### useFormAnalysis
+
 - Analyzes keypoints based on selected exercise
 - Returns feedback and validation status
 - Exercise-specific analyzers in `lib/exerciseAnalyzers.js`
 
 ### useVoiceFeedback
+
 - Manages ElevenLabs TTS API integration
 - Implements audio queue to prevent overlapping speech
 - Falls back to Web Speech API if ElevenLabs unavailable
@@ -48,11 +51,13 @@ FormBuddy is a client-side web application built with React and Vite. All proces
 ## Utility Libraries
 
 ### angleUtils.js
+
 - `calculateAngle()` - Calculates angle between three points
 - `calculateDistance()` - Calculates distance between two points
 - `findKeypoint()` - Finds keypoint by name with fuzzy matching
 
 ### exerciseAnalyzers.js
+
 - `analyzeSquat()` - Squat-specific form analysis
   - Checks knee angle (depth)
   - Checks back alignment
