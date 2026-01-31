@@ -53,32 +53,58 @@ export const VOICE_PERSONALITY = {
   NEUTRAL: 'neutral'
 }
 
+// Voice gender types
+export const VOICE_GENDER = {
+  MALE: 'male',
+  FEMALE: 'female'
+}
+
+// ElevenLabs voice IDs mapping (Free Tier Compatible)
+// These are commonly available voices in the free tier
+// Male voices
+const MALE_VOICES = {
+  [VOICE_PERSONALITY.CALM]: 'pNInz6obpgDQGcFmaJgB', // Adam - calm, professional (free tier)
+  [VOICE_PERSONALITY.NEUTRAL]: 'pNInz6obpgDQGcFmaJgB', // Adam - balanced (free tier)
+  [VOICE_PERSONALITY.ENERGETIC]: 'pNInz6obpgDQGcFmaJgB' // Adam - can be energetic (free tier)
+}
+
+// Female voices
+const FEMALE_VOICES = {
+  [VOICE_PERSONALITY.CALM]: 'EXAVITQu4vr4xnSDxMaL', // Bella - calm, warm (free tier)
+  [VOICE_PERSONALITY.NEUTRAL]: 'EXAVITQu4vr4xnSDxMaL', // Bella - balanced (free tier)
+  [VOICE_PERSONALITY.ENERGETIC]: 'EXAVITQu4vr4xnSDxMaL' // Bella - can be energetic (free tier)
+}
+
 /**
- * Get base voice settings for personality
+ * Get base voice settings for personality and gender
  */
-const getPersonalitySettings = (personality) => {
+const getPersonalitySettings = (personality, gender = VOICE_GENDER.MALE) => {
+  // Get voice ID based on gender and personality
+  const voiceMap = gender === VOICE_GENDER.FEMALE ? FEMALE_VOICES : MALE_VOICES
+  const voiceId = voiceMap[personality] || voiceMap[VOICE_PERSONALITY.NEUTRAL]
+
   switch (personality) {
     case VOICE_PERSONALITY.CALM:
       return {
         baseRate: 0.85,
-        basePitch: 0.95,
+        basePitch: gender === VOICE_GENDER.FEMALE ? 1.05 : 0.95, // Slightly higher for female
         baseStability: 0.7,
-        voiceId: '21m00Tcm4TlvDq8ikWAM' // Default calm voice
+        voiceId: voiceId
       }
     case VOICE_PERSONALITY.ENERGETIC:
       return {
         baseRate: 0.95,
-        basePitch: 1.1,
+        basePitch: gender === VOICE_GENDER.FEMALE ? 1.15 : 1.1,
         baseStability: 0.3,
-        voiceId: '21m00Tcm4TlvDq8ikWAM' // Can be changed to more energetic voice
+        voiceId: voiceId
       }
     case VOICE_PERSONALITY.NEUTRAL:
     default:
       return {
         baseRate: 0.9,
-        basePitch: 1.0,
+        basePitch: gender === VOICE_GENDER.FEMALE ? 1.1 : 1.0,
         baseStability: 0.5,
-        voiceId: '21m00Tcm4TlvDq8ikWAM' // Default voice
+        voiceId: voiceId
       }
   }
 }
@@ -87,8 +113,8 @@ const getPersonalitySettings = (personality) => {
  * Adapt voice settings based on breathing metrics and personality
  * Used only for coaching tone, timing, and frequency - NOT for medical/emotional inference
  */
-const adaptVoiceSettings = (personality, breathingRate, breathingConsistency, signalConfidence) => {
-  const personalitySettings = getPersonalitySettings(personality)
+const adaptVoiceSettings = (personality, gender, breathingRate, breathingConsistency, signalConfidence) => {
+  const personalitySettings = getPersonalitySettings(personality, gender)
   
   let rate = personalitySettings.baseRate
   let pitch = personalitySettings.basePitch
@@ -129,7 +155,7 @@ const adaptVoiceSettings = (personality, breathingRate, breathingConsistency, si
   }
 }
 
-export function useVoiceFeedback(personality = VOICE_PERSONALITY.NEUTRAL) {
+export function useVoiceFeedback(personality = VOICE_PERSONALITY.NEUTRAL, gender = VOICE_GENDER.MALE) {
   const apiKeyRef = useRef(null)
 
   // Get API key from environment or prompt user
@@ -153,20 +179,22 @@ export function useVoiceFeedback(personality = VOICE_PERSONALITY.NEUTRAL) {
   const speak = useCallback(async (text, breathingRate = null, breathingConsistency = null, signalConfidence = null) => {
     if (!text || !text.trim()) return
 
-    // Adapt voice settings based on personality and breathing metrics (coaching adaptation only)
+    // Adapt voice settings based on personality, gender, and breathing metrics (coaching adaptation only)
     const voiceSettings = (breathingRate && breathingConsistency && signalConfidence)
-      ? adaptVoiceSettings(personality, breathingRate, breathingConsistency, signalConfidence)
-      : getPersonalitySettings(personality)
+      ? adaptVoiceSettings(personality, gender, breathingRate, breathingConsistency, signalConfidence)
+      : getPersonalitySettings(personality, gender)
 
     const apiKey = getApiKey()
     if (!apiKey) {
       // Fallback to Web Speech API if ElevenLabs is not configured
-      console.log('Using Web Speech API fallback')
+      console.warn('⚠️ ElevenLabs API key not found. Using Web Speech API fallback.')
+      console.info('💡 To use ElevenLabs TTS, set VITE_ELEVENLABS_API_KEY in your .env file or use the API Key Tester component.')
       return speakWithWebAPI(text, voiceSettings)
     }
 
     try {
       // ElevenLabs TTS API
+      console.log(`🎤 Using ElevenLabs TTS (Voice: ${voiceSettings.voiceId}, Personality: ${personality}, Gender: ${gender})`)
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceSettings.voiceId}`,
         {
@@ -178,7 +206,7 @@ export function useVoiceFeedback(personality = VOICE_PERSONALITY.NEUTRAL) {
           },
           body: JSON.stringify({
             text: text,
-            model_id: 'eleven_monolingual_v1',
+            model_id: 'eleven_turbo_v2_5', // Free tier compatible model
             voice_settings: {
               stability: voiceSettings.stability,
               similarity_boost: 0.75
@@ -188,22 +216,25 @@ export function useVoiceFeedback(personality = VOICE_PERSONALITY.NEUTRAL) {
       )
 
       if (!response.ok) {
-        throw new Error(`ElevenLabs API error: ${response.statusText}`)
+        const errorData = await response.json().catch(() => ({ detail: { message: response.statusText } }))
+        throw new Error(`ElevenLabs API error (${response.status}): ${errorData.detail?.message || response.statusText}`)
       }
 
       const audioBlob = await response.blob()
       const audioUrl = URL.createObjectURL(audioBlob)
       
+      console.log(`✅ ElevenLabs audio generated (${audioBlob.size} bytes)`)
       await audioQueue.add(audioUrl)
       
       // Clean up blob URL after a delay
       setTimeout(() => URL.revokeObjectURL(audioUrl), 60000)
     } catch (error) {
-      console.error('Error with ElevenLabs TTS:', error)
+      console.error('❌ Error with ElevenLabs TTS:', error.message)
+      console.warn('⚠️ Falling back to Web Speech API')
       // Fallback to Web Speech API
       return speakWithWebAPI(text, voiceSettings)
     }
-  }, [getApiKey, personality])
+  }, [getApiKey, personality, gender])
 
   return { speak }
 }

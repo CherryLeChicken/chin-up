@@ -4,7 +4,8 @@ import ExerciseSelector from './components/ExerciseSelector'
 import ControlPanel from './components/ControlPanel'
 import FeedbackDisplay from './components/FeedbackDisplay'
 import VoicePersonalitySelector from './components/VoicePersonalitySelector'
-import { VOICE_PERSONALITY } from './hooks/useVoiceFeedback'
+import ApiKeyTester from './components/ApiKeyTester'
+import { VOICE_PERSONALITY, VOICE_GENDER } from './hooks/useVoiceFeedback'
 
 function App() {
   const [selectedExercise, setSelectedExercise] = useState(null)
@@ -12,6 +13,7 @@ function App() {
   const [feedback, setFeedback] = useState('')
   const [repCount, setRepCount] = useState(0)
   const [voicePersonality, setVoicePersonality] = useState(VOICE_PERSONALITY.NEUTRAL)
+  const [voiceGender, setVoiceGender] = useState(VOICE_GENDER.MALE)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -44,6 +46,7 @@ function App() {
               onFeedback={setFeedback}
               onRepCountUpdate={setRepCount}
               voicePersonality={voicePersonality}
+              voiceGender={voiceGender}
             />
           </div>
 
@@ -63,9 +66,12 @@ function App() {
 
             <VoicePersonalitySelector
               personality={voicePersonality}
-              onSelect={setVoicePersonality}
-              disabled={isActive}
+              gender={voiceGender}
+              onPersonalitySelect={setVoicePersonality}
+              onGenderSelect={setVoiceGender}
             />
+
+            <ApiKeyTester />
 
             <FeedbackDisplay feedback={feedback} />
             

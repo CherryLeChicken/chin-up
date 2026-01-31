@@ -4,7 +4,7 @@ import { useFormAnalysis } from '../hooks/useFormAnalysis'
 import { useVoiceFeedback } from '../hooks/useVoiceFeedback'
 import { usePresage } from '../hooks/usePresage'
 
-export default function CameraFeed({ exercise, isActive, onFeedback, onRepCountUpdate, voicePersonality }) {
+export default function CameraFeed({ exercise, isActive, onFeedback, onRepCountUpdate, voicePersonality, voiceGender }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const [stream, setStream] = useState(null)
@@ -17,7 +17,7 @@ export default function CameraFeed({ exercise, isActive, onFeedback, onRepCountU
 
   const { detectPose, keypoints, isLoading } = usePoseDetection()
   const { analyzeForm } = useFormAnalysis(exercise)
-  const { speak } = useVoiceFeedback(voicePersonality)
+  const { speak } = useVoiceFeedback(voicePersonality, voiceGender)
   const { trackMovement, trackRep, getPredictions, predictions: presagePredictions, repCount, breathingRate, breathingConsistency, signalConfidence } = usePresage(exercise, isActive)
   
   // Debug: Log Presage metrics (throttled)
