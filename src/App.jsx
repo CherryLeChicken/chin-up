@@ -3,11 +3,15 @@ import CameraFeed from './components/CameraFeed'
 import ExerciseSelector from './components/ExerciseSelector'
 import ControlPanel from './components/ControlPanel'
 import FeedbackDisplay from './components/FeedbackDisplay'
+import VoicePersonalitySelector from './components/VoicePersonalitySelector'
+import { VOICE_PERSONALITY } from './hooks/useVoiceFeedback'
 
 function App() {
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [isActive, setIsActive] = useState(false)
   const [feedback, setFeedback] = useState('')
+  const [repCount, setRepCount] = useState(0)
+  const [voicePersonality, setVoicePersonality] = useState(VOICE_PERSONALITY.NEUTRAL)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -38,6 +42,8 @@ function App() {
               exercise={selectedExercise}
               isActive={isActive}
               onFeedback={setFeedback}
+              onRepCountUpdate={setRepCount}
+              voicePersonality={voicePersonality}
             />
           </div>
 
@@ -55,7 +61,27 @@ function App() {
               hasExercise={!!selectedExercise}
             />
 
+            <VoicePersonalitySelector
+              personality={voicePersonality}
+              onSelect={setVoicePersonality}
+              disabled={isActive}
+            />
+
             <FeedbackDisplay feedback={feedback} />
+            
+            {/* Rep Counter */}
+            {isActive && selectedExercise && repCount > 0 && (
+              <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-6">
+                <div className="text-center">
+                  <div className="text-4xl font-display font-bold text-cyan-400 mb-2">
+                    {repCount}
+                  </div>
+                  <div className="text-sm text-slate-400 font-body uppercase tracking-wide">
+                    Reps Completed
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

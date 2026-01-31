@@ -2,8 +2,9 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import { usePoseDetection } from '../hooks/usePoseDetection'
 import { useFormAnalysis } from '../hooks/useFormAnalysis'
 import { useVoiceFeedback } from '../hooks/useVoiceFeedback'
+import { usePresage } from '../hooks/usePresage'
 
-export default function CameraFeed({ exercise, isActive, onFeedback }) {
+export default function CameraFeed({ exercise, isActive, onFeedback, onRepCountUpdate, voicePersonality }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const [stream, setStream] = useState(null)
@@ -11,13 +12,32 @@ export default function CameraFeed({ exercise, isActive, onFeedback }) {
   const lastFeedbackTimeRef = useRef(0)
   const lastKeypointLogTimeRef = useRef(0)
   const lastDetectionLogTimeRef = useRef(0)
+  const lastPresageLogTimeRef = useRef(0)
   const FEEDBACK_INTERVAL = 2000 // 2 seconds between feedback
 
   const { detectPose, keypoints, isLoading } = usePoseDetection()
   const { analyzeForm } = useFormAnalysis(exercise)
-  const { speak } = useVoiceFeedback()
+  const { speak } = useVoiceFeedback(voicePersonality)
+  const { trackMovement, trackRep, getPredictions, predictions: presagePredictions, repCount, breathingRate, breathingConsistency, signalConfidence } = usePresage(exercise, isActive)
+  
+  // Debug: Log Presage metrics (throttled)
+  useEffect(() => {
+    if (isActive && exercise && breathingRate) {
+      const now = Date.now()
+      if (!lastPresageLogTimeRef.current || now - lastPresageLogTimeRef.current > 5000) {
+        console.log('Presage Metrics:', {
+          breathingRate,
+          breathingConsistency,
+          signalConfidence,
+          repCount
+        })
+        lastPresageLogTimeRef.current = now
+      }
+    }
+  }, [isActive, exercise, breathingRate, breathingConsistency, signalConfidence, repCount])
   const [detectionStatus, setDetectionStatus] = useState('initializing') // 'initializing', 'detecting', 'no-pose', 'detected', 'full-body'
   const [isFullBodyVisible, setIsFullBodyVisible] = useState(false)
+  const lastPresageCheckRef = useRef(0)
 
   // Initialize camera
   useEffect(() => {
@@ -50,13 +70,18 @@ export default function CameraFeed({ exercise, isActive, onFeedback }) {
 
   // Handle keypoints updates for feedback and drawing
   useEffect(() => {
+    // Initialize fullBodyVisible to avoid undefined errors
+    let fullBodyVisible = false
+    
     if (!isActive) {
       setDetectionStatus('initializing')
+      setIsFullBodyVisible(false)
       return
     }
 
     if (isLoading) {
       setDetectionStatus('initializing')
+      setIsFullBodyVisible(false)
       return
     }
 
@@ -87,7 +112,7 @@ export default function CameraFeed({ exercise, isActive, onFeedback }) {
     }
 
     // Check if full body is visible (only if exercise is selected)
-    const fullBodyVisible = exercise ? checkFullBodyVisible(keypoints, exercise) : false
+    fullBodyVisible = exercise ? checkFullBodyVisible(keypoints, exercise) : false
     setIsFullBodyVisible(fullBodyVisible)
 
     if (fullBodyVisible) {
@@ -98,23 +123,66 @@ export default function CameraFeed({ exercise, isActive, onFeedback }) {
 
     drawPose(keypoints)
     
+    // Track movement for Presage analytics (breathing can work with just face/shoulders)
+    // Check if we have at least face/shoulders for breathing detection
+    const hasUpperBody = keypoints && keypoints.some(kp => {
+      if (!kp || kp.score <= 0.3) return false
+      const name = (kp.name || '').toLowerCase()
+      return name.includes('shoulder') || name.includes('nose') || name.includes('eye')
+    })
+    
+    // Track movement for breathing analysis (works with just upper body)
+    if (isActive && hasUpperBody) {
+      trackMovement(keypoints)
+    }
+    
     // Only analyze form and give feedback if exercise is selected AND full body is visible
     if (exercise && fullBodyVisible) {
       const analysis = analyzeForm(keypoints)
       
+      // Track rep for Presage
+      trackRep(keypoints, analysis)
+      
       // Only give feedback if it's actual exercise feedback (not positioning messages)
+      // Adapt feedback frequency based on signal confidence (coaching frequency adaptation)
+      const confidenceMultiplier = signalConfidence === 'low' ? 1.5 : signalConfidence === 'medium' ? 1.2 : 1.0
+      const adaptedInterval = FEEDBACK_INTERVAL * confidenceMultiplier
+      
       if (analysis.feedback && !analysis.feedback.toLowerCase().includes('position yourself')) {
         const now = Date.now()
-        if (now - lastFeedbackTimeRef.current > FEEDBACK_INTERVAL) {
+        if (now - lastFeedbackTimeRef.current > adaptedInterval) {
           onFeedback(analysis.feedback)
           if (analysis.feedback.trim()) {
-            speak(analysis.feedback)
+            // Pass breathing metrics to adapt voice tone (coaching adaptation only)
+            speak(analysis.feedback, breathingRate, breathingConsistency, signalConfidence)
           }
           lastFeedbackTimeRef.current = now
         }
       }
+      
+      // Check for Presage predictions periodically (every 5 seconds)
+      const now = Date.now()
+      if (now - lastPresageCheckRef.current > 5000) {
+        const predictions = getPredictions()
+        if (predictions && predictions.suggestions.length > 0) {
+          // Get highest priority suggestion
+          const highPrioritySuggestion = predictions.suggestions.find(s => s.priority === 'high')
+          const suggestion = highPrioritySuggestion || predictions.suggestions[0]
+          
+          // Only speak if it's been a while since last feedback
+          // Adapt timing based on signal confidence
+          const confidenceMultiplier = signalConfidence === 'low' ? 1.5 : signalConfidence === 'medium' ? 1.2 : 1.0
+          if (now - lastFeedbackTimeRef.current > FEEDBACK_INTERVAL * 2 * confidenceMultiplier) {
+            onFeedback(suggestion.message)
+            // Pass breathing metrics to adapt voice tone (coaching adaptation only)
+            speak(suggestion.message, breathingRate, breathingConsistency, signalConfidence)
+            lastFeedbackTimeRef.current = now
+          }
+        }
+        lastPresageCheckRef.current = now
+      }
     }
-  }, [keypoints, isActive, exercise, analyzeForm, speak, onFeedback, isLoading])
+  }, [keypoints, isActive, exercise, analyzeForm, speak, onFeedback, isLoading, trackMovement, trackRep, getPredictions, breathingRate, breathingConsistency, signalConfidence])
 
   // Pose detection loop (works even without exercise selected for testing)
   useEffect(() => {
@@ -340,6 +408,48 @@ export default function CameraFeed({ exercise, isActive, onFeedback }) {
       ['right_knee', 'right_ankle'],
     ]
 
+    // Exercise-specific connections (highlighted)
+    if (exercise === 'push-up') {
+      // For push-up, emphasize arm connections
+      const leftShoulder = findKeypoint(keypoints, 'left_shoulder')
+      const rightShoulder = findKeypoint(keypoints, 'right_shoulder')
+      const leftElbow = findKeypoint(keypoints, 'left_elbow')
+      const rightElbow = findKeypoint(keypoints, 'right_elbow')
+      const leftWrist = findKeypoint(keypoints, 'left_wrist')
+      const rightWrist = findKeypoint(keypoints, 'right_wrist')
+      const leftHip = findKeypoint(keypoints, 'left_hip')
+      const rightHip = findKeypoint(keypoints, 'right_hip')
+      const leftAnkle = findKeypoint(keypoints, 'left_ankle')
+      const rightAnkle = findKeypoint(keypoints, 'right_ankle')
+
+      // Draw body line (shoulder-hip-ankle) for alignment check
+      if (leftShoulder && leftHip && leftAnkle && 
+          leftShoulder.score > 0.3 && leftHip.score > 0.3 && leftAnkle.score > 0.3) {
+        ctx.strokeStyle = '#10b981' // Green for body alignment
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(leftShoulder.x, leftShoulder.y)
+        ctx.lineTo(leftHip.x, leftHip.y)
+        ctx.lineTo(leftAnkle.x, leftAnkle.y)
+        ctx.stroke()
+      }
+
+      if (rightShoulder && rightHip && rightAnkle &&
+          rightShoulder.score > 0.3 && rightHip.score > 0.3 && rightAnkle.score > 0.3) {
+        ctx.strokeStyle = '#10b981'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(rightShoulder.x, rightShoulder.y)
+        ctx.lineTo(rightHip.x, rightHip.y)
+        ctx.lineTo(rightAnkle.x, rightAnkle.y)
+        ctx.stroke()
+      }
+
+      // Reset stroke style for arm connections
+      ctx.strokeStyle = '#22d3ee'
+      ctx.lineWidth = 3
+    }
+
     // Draw skeleton connections
     ctx.strokeStyle = '#22d3ee'
     ctx.lineWidth = 3
@@ -419,6 +529,14 @@ export default function CameraFeed({ exercise, isActive, onFeedback }) {
       }
     })
   }
+
+  // Expose rep count to parent via callback (for display in App)
+  // MUST be before any conditional returns (Rules of Hooks)
+  useEffect(() => {
+    if (onRepCountUpdate && typeof onRepCountUpdate === 'function') {
+      onRepCountUpdate(repCount)
+    }
+  }, [repCount, onRepCountUpdate])
 
   if (!isActive) {
     return (
@@ -585,9 +703,58 @@ export default function CameraFeed({ exercise, isActive, onFeedback }) {
       )}
 
 
+      {/* Presage Metrics Display - shows when face/shoulders detected (breathing) or full body (all metrics) */}
+      {isActive && (detectionStatus === 'full-body' || detectionStatus === 'detected') && (
+        <div className={`absolute bottom-4 left-4 bg-slate-900/95 backdrop-blur-sm px-4 py-3 rounded-lg border max-w-xs ${
+          detectionStatus === 'full-body' ? 'border-green-500/50' : 'border-cyan-500/50'
+        }`}>
+          <div className={`text-xs font-semibold mb-2 uppercase tracking-wide ${
+            detectionStatus === 'full-body' ? 'text-green-400' : 'text-cyan-400'
+          }`}>
+            Presage Analytics {detectionStatus === 'full-body' ? '(Full Body)' : '(Breathing Only)'}
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Breathing Rate:</span>
+              <span className={`font-semibold ${
+                breathingRate === 'fast' ? 'text-yellow-400' :
+                breathingRate === 'slow' ? 'text-blue-400' :
+                'text-green-400'
+              }`}>
+                {breathingRate || 'normal'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Consistency:</span>
+              <span className={`font-semibold ${
+                breathingConsistency === 'erratic' ? 'text-orange-400' : 'text-green-400'
+              }`}>
+                {breathingConsistency || 'steady'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-300">Signal Confidence:</span>
+              <span className={`font-semibold ${
+                signalConfidence === 'low' ? 'text-red-400' :
+                signalConfidence === 'medium' ? 'text-yellow-400' :
+                'text-green-400'
+              }`}>
+                {signalConfidence || 'medium'}
+              </span>
+            </div>
+            {repCount > 0 && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-700">
+                <span className="text-slate-300">Reps:</span>
+                <span className="text-cyan-400 font-semibold">{repCount}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Debug panel showing detected joints */}
       {detectionStatus === 'detected' && detectedJoints.length > 0 && (
-        <div className="absolute bottom-4 left-4 bg-slate-900/95 backdrop-blur-sm px-4 py-3 rounded-lg border border-cyan-500/50 max-w-xs max-h-48 overflow-y-auto">
+        <div className="absolute bottom-4 right-4 bg-slate-900/95 backdrop-blur-sm px-4 py-3 rounded-lg border border-cyan-500/50 max-w-xs max-h-48 overflow-y-auto">
           <div className="text-xs text-cyan-400 font-semibold mb-2 uppercase tracking-wide">
             Detected Joints ({detectedJoints.length})
           </div>
