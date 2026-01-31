@@ -21,7 +21,7 @@ A real-time, voice-first fitness companion that analyzes exercise form through t
 
 ```bash
 git clone <repository-url>
-cd gym
+cd chin-up
 ```
 
 2. Install dependencies:
@@ -64,7 +64,7 @@ The app will be available at `http://localhost:3000`
 ## Project Structure
 
 ```
-gym/
+chin-up/
 ├── src/
 │   ├── components/       # React components
 │   │   ├── CameraFeed.jsx
