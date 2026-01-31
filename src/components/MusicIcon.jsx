@@ -56,7 +56,7 @@ export default function MusicIcon({
 
   const handlePresetClick = (preset) => {
     playMusic(preset.prompt)
-    setShowDropdown(false)
+    // Removed setShowDropdown(false) to keep the tab open
   }
 
   const handleCustomSubmit = (e) => {
@@ -64,7 +64,7 @@ export default function MusicIcon({
     if (customPrompt.trim()) {
       playMusic(customPrompt)
       setCustomPrompt('')
-      setShowDropdown(false)
+      // Removed setShowDropdown(false) to keep the tab open
     }
   }
 
@@ -186,8 +186,17 @@ export default function MusicIcon({
             </form>
 
             {isLoading && (
-              <div className="text-center py-2">
-                <span className="text-xs text-cyan-400">Generating music...</span>
+              <div className="py-4 px-4 bg-cyan-500/10 rounded-xl border border-cyan-500/30 text-center space-y-3 animate-pulse">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="relative animate-spin h-5 w-5 border-2 border-cyan-500 border-t-transparent rounded-full"></div>
+                  <p className="text-sm font-display font-bold text-cyan-400 tracking-wide">GENERATING AI AUDIO...</p>
+                </div>
+                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full w-1/2 bg-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-loading-progress"></div>
+                </div>
+                <p className="text-[10px] text-cyan-500/70 font-medium uppercase tracking-tighter">
+                  Crafting your custom track • ~15 seconds
+                </p>
               </div>
             )}
 

@@ -426,8 +426,8 @@ export default function ExerciseSelector({ selectedExercise, onSelect, onHover, 
     <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-xl font-semibold text-[#FDF8FF]">
-          Select Exercise
-        </h2>
+        Select Exercise
+      </h2>
         <div className="flex items-center gap-2">
           <button
             onClick={handleRandomExercise}
@@ -468,32 +468,32 @@ export default function ExerciseSelector({ selectedExercise, onSelect, onHover, 
                   : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
               }`}
             >
-              <button
-                onClick={() => onSelect(exercise.id)}
-                onMouseEnter={() => {
-                  if (!disabled && onHover) {
-                    console.log('Mouse enter on exercise:', exercise.id)
-                    onHover(exercise.id)
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (!disabled && onHover) {
-                    console.log('Mouse leave on exercise')
-                    onHover(null)
-                  }
-                }}
-                disabled={disabled}
+          <button
+            onClick={() => onSelect(exercise.id)}
+            onMouseEnter={() => {
+              if (!disabled && onHover) {
+                console.log('Mouse enter on exercise:', exercise.id)
+                onHover(exercise.id)
+              }
+            }}
+            onMouseLeave={() => {
+              if (!disabled && onHover) {
+                console.log('Mouse leave on exercise')
+                onHover(null)
+              }
+            }}
+            disabled={disabled}
                 className={`w-full p-4 rounded-xl text-left ${
                   disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
                 }`}
               >
                 <div className="flex items-center gap-3 pr-8">
-                  <span className="text-2xl">{exercise.icon}</span>
-                  <span className="font-body font-medium text-[#FBF8FF] capitalize">
-                    {exercise.name}
-                  </span>
-                </div>
-              </button>
+              <span className="text-2xl">{exercise.icon}</span>
+              <span className="font-body font-medium text-[#FBF8FF] capitalize">
+                {exercise.name}
+              </span>
+            </div>
+          </button>
               <button
                 onClick={(e) => toggleFavorite(exercise.id, e)}
                 disabled={disabled}

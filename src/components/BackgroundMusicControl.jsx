@@ -50,7 +50,6 @@ export default function BackgroundMusicControl({
     <div className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800 p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-xl">🎵</span>
           <h3 className="font-display font-semibold text-slate-200">Background Music</h3>
         </div>
         <div className="flex items-end gap-[3px] h-6 px-2 bg-slate-950/30 rounded-lg border border-slate-800/50">
@@ -80,67 +79,101 @@ export default function BackgroundMusicControl({
       </div>
 
       <div className="space-y-4">
+        {/* Presets Grid */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {MUSIC_PRESETS.map((preset) => {
+            const isSelected = currentPrompt === preset.prompt;
+            const isThisLoading = isLoading && currentPrompt === preset.prompt;
+            
+            return (
+              <button
+                key={preset.id}
+                onClick={() => playMusic(preset.prompt)}
+                disabled={isLoading}
+                className={`relative py-3 px-2 rounded-xl text-sm font-medium transition-all text-center border overflow-hidden ${
+                  isSelected
+                    ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
+                    : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/50 hover:text-cyan-400'
+                } ${isLoading ? 'cursor-wait opacity-80' : ''}`}
+              >
+                {isThisLoading && (
+                  <div className="absolute inset-0 bg-cyan-500/10 flex items-center justify-center">
+                    <div className="w-full h-full absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent animate-loading-progress"></div>
+                  </div>
+                )}
+                <span className={isThisLoading ? 'opacity-40' : ''}>{preset.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Global Loading Indicator - More Obvious */}
         {isLoading && (
-          <div className="py-6 px-4 bg-slate-950/40 rounded-2xl border border-cyan-500/20 text-center space-y-4">
-            <div className="relative flex justify-center">
-              <div className="relative animate-spin h-10 w-10 border-4 border-cyan-500 border-t-transparent rounded-full"></div>
+          <div className="py-4 px-4 bg-cyan-500/10 rounded-xl border border-cyan-500/30 text-center space-y-3 animate-pulse">
+            <div className="flex items-center justify-center gap-3">
+              <div className="relative animate-spin h-5 w-5 border-2 border-cyan-500 border-t-transparent rounded-full"></div>
+              <p className="text-sm font-display font-bold text-cyan-400 tracking-wide">GENERATING AI AUDIO...</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-display font-bold text-cyan-400">Composing Audio...</p>
-              <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
-                Generating your custom track (approx. 15s)
-              </p>
+            <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full w-1/2 bg-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-loading-progress"></div>
             </div>
-            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full w-1/3 bg-cyan-500 animate-loading-progress"></div>
-            </div>
+            <p className="text-[10px] text-cyan-500/70 font-medium uppercase tracking-tighter">
+              Crafting your custom track • ~15 seconds
+            </p>
           </div>
         )}
 
-        {/* Presets Grid */}
-        {!isLoading && (
-          <>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {MUSIC_PRESETS.map((preset) => {
-                const isSelected = currentPrompt === preset.prompt;
-                return (
-                  <button
-                    key={preset.id}
-                    onClick={() => playMusic(preset.prompt)}
-                    className={`py-3 px-2 rounded-xl text-sm font-medium transition-all text-center border ${
-                      isSelected
-                        ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
-                        : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/50 hover:text-cyan-400'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
+        {/* Always show Volume control */}
+        <div className="bg-slate-950/30 rounded-xl p-3 border border-slate-800/50 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <button 
+              onClick={toggleMute}
+              className="text-[10px] text-slate-500 uppercase tracking-wider font-bold hover:text-cyan-500 transition-colors"
+            >
+              {isMuted ? '🔇 Muted' : '🔊 Master Volume'}
+            </button>
+            <span className="text-[10px] text-cyan-500 font-mono">{Math.round(volume * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={volume}
+            onChange={(e) => updateVolume(parseFloat(e.target.value))}
+            className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+          />
+        </div>
 
-            {/* Volume control always available under options */}
-            <div className="bg-slate-950/30 rounded-xl p-3 border border-slate-800/50 mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <button 
-                  onClick={toggleMute}
-                  className="text-[10px] text-slate-500 uppercase tracking-wider font-bold hover:text-cyan-500 transition-colors"
-                >
-                  {isMuted ? '🔇 Muted' : '🔊 Master Volume'}
-                </button>
-                <span className="text-[10px] text-cyan-500 font-mono">{Math.round(volume * 100)}%</span>
+        {/* Playback Controls (Pause/Play/Stop) - Shown only when music is ready */}
+        {currentPrompt && !isLoading && (
+          <div className="bg-cyan-500/5 rounded-xl p-4 border border-cyan-500/20 space-y-4">
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={togglePlay}
+                className="w-12 h-12 flex items-center justify-center rounded-full bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30 transition-all text-xl"
+                title={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? '⏸' : '▶'}
+              </button>
+              
+              <div className="flex-1">
+                <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold mb-1">Now Playing</p>
+                <p className="text-xs text-cyan-400 italic truncate max-w-[150px]">
+                  {MUSIC_PRESETS.find(p => p.prompt === currentPrompt)?.label || 'Custom Vibe'}
+                </p>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={volume}
-                onChange={(e) => updateVolume(parseFloat(e.target.value))}
-                className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-              />
+
+              <button
+                type="button"
+                onClick={stopMusic}
+                className="text-[10px] text-red-400/70 hover:text-red-400 uppercase tracking-widest font-bold transition-colors border border-red-500/20 px-3 py-2 rounded-lg hover:bg-red-500/10"
+              >
+                Stop
+              </button>
             </div>
-          </>
+          </div>
         )}
 
         {/* Custom Prompt Input */}
@@ -164,82 +197,7 @@ export default function BackgroundMusicControl({
             </button>
           </form>
         )}
-
-        {/* Always show volume and visualizer if we have a prompt (even if loading or paused) */}
-        {currentPrompt && !isLoading && (
-          <div className="space-y-4 pt-2">
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={togglePlay}
-                  disabled={isLoading}
-                  className={`w-12 h-12 flex items-center justify-center rounded-full border transition-all text-xl ${
-                    isLoading 
-                      ? 'bg-slate-800/50 border-slate-700 text-slate-600' 
-                      : 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30'
-                  }`}
-                  title={isPlaying ? 'Pause' : 'Play'}
-                >
-                  {isLoading ? '...' : isPlaying ? '⏸' : '▶'}
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleMute}
-                  disabled={isLoading}
-                  className={`w-12 h-8 flex items-center justify-center rounded-lg border transition-all text-lg ${
-                    isMuted 
-                      ? 'bg-red-500/20 border-red-500/50 text-red-400' 
-                      : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-cyan-400'
-                  }`}
-                  title={isMuted ? 'Unmute' : 'Mute'}
-                >
-                  {isMuted ? '🔇' : '🔊'}
-                </button>
-              </div>
-              
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                    {isMuted ? 'Muted' : 'Volume'}
-                  </span>
-                  <span className="text-[10px] text-cyan-500 font-mono">{Math.round(volume * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={volume}
-                  onChange={(e) => updateVolume(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={stopMusic}
-                  className="text-[10px] text-red-400/70 hover:text-red-400 uppercase tracking-widest font-bold transition-colors"
-                >
-                  Stop
-                </button>
-                <button
-                  type="button"
-                  onClick={stopMusic}
-                  className="text-[10px] text-cyan-400/70 hover:text-cyan-400 uppercase tracking-widest font-bold transition-colors"
-                >
-                  ← Change Vibe
-                </button>
-              </div>
-              <span className="text-[10px] text-slate-600 italic truncate max-w-[100px]">
-                {currentPrompt.length > 30 ? 'Custom Preset' : currentPrompt}
-              </span>
-            </div>
-          </div>
-        )}
+      </div>
       </div>
 
       {error && (
