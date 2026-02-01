@@ -33,6 +33,7 @@ export default function CameraFeed({
   const lastDetectionLogTimeRef = useRef(0);
   const feedbackHistoryRef = useRef([]); // Track recent feedback keys (max 10)
   const FEEDBACK_INTERVAL = 2000; // 2 seconds between feedback
+  const hasPlayedStartMessageRef = useRef(false); // Track if we've played the start message
 
   const { detectPose, keypoints, isLoading } = usePoseDetection();
   const { analyzeForm } = useFormAnalysis(exercise);
@@ -59,7 +60,39 @@ export default function CameraFeed({
   // Reset feedback history when exercise changes
   useEffect(() => {
     feedbackHistoryRef.current = [];
+    hasPlayedStartMessageRef.current = false; // Reset start message flag when exercise changes
   }, [exercise]);
+
+  // Play encouraging message when exercise starts
+  useEffect(() => {
+    if (isActive && exercise && !hasPlayedStartMessageRef.current) {
+      // Array of encouraging start messages
+      const startMessages = [
+        "Let's get started!",
+        "You got this!",
+        "Let's do this!",
+        "Ready to go!",
+        "Here we go!",
+        "You're ready!"
+      ];
+      
+      // Pick a random message
+      const message = startMessages[Math.floor(Math.random() * startMessages.length)];
+      
+      // Play the message after a short delay to ensure voice is ready
+      const timer = setTimeout(() => {
+        speak(message, null, null, null).catch(err => {
+          console.warn('Error playing start message:', err);
+        });
+        hasPlayedStartMessageRef.current = true;
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    } else if (!isActive) {
+      // Reset flag when exercise stops so it plays again next time
+      hasPlayedStartMessageRef.current = false;
+    }
+  }, [isActive, exercise, speak]);
 
   // Initialize camera
   useEffect(() => {
