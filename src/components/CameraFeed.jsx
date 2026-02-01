@@ -25,7 +25,8 @@ export default function CameraFeed({
     'squat': 'https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-bodyweight-box-squat-side.mp4',
     'push-up': 'https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-push-up-side.mp4',
     'lunge': 'https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-forward-lunges-side.mp4',
-    'wall-sit': 'https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-wall-sit-side.mp4'
+    'wall-sit': 'https://media.musclewiki.com/media/uploads/videos/branded/male-Bodyweight-wall-sit-side.mp4',
+    'barbell-rdl': 'https://media.musclewiki.com/media/uploads/videos/branded/male-Dumbbells-dumbbell-romanian-deadlift-side.mp4'
   };
 
   const lastFeedbackTimeRef = useRef(0);

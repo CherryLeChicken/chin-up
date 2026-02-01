@@ -11,7 +11,6 @@ const ALL_EXERCISES = [
   // Legs exercises - Dumbbells
   { id: "goblet-squat", name: "Goblet Squat", icon: "🏋️", targets: ["legs", "full-body"], equipment: ["dumbbells"] },
   { id: "dumbbell-lunge", name: "Dumbbell Lunges", icon: "🏋️", targets: ["legs", "cardio"], equipment: ["dumbbells"] },
-  { id: "dumbbell-rdl", name: "Romanian Deadlift", icon: "🏋️", targets: ["legs", "upper-body"], equipment: ["dumbbells"] },
   { id: "dumbbell-squat", name: "Dumbbell Squat", icon: "🏋️", targets: ["legs", "full-body"], equipment: ["dumbbells"] },
   { id: "weighted-calf-raise", name: "Weighted Calf Raises", icon: "🦵", targets: ["legs"], equipment: ["dumbbells"] },
   
@@ -123,6 +122,7 @@ const ALL_EXERCISES = [
   // Full Body exercises - Dumbbells
   { id: "squat-press", name: "Squat to Press", icon: "🏋️", targets: ["full-body", "legs", "upper-body"], equipment: ["dumbbells"] },
   { id: "deadlift", name: "Deadlift", icon: "🏋️", targets: ["full-body", "legs", "upper-body"], equipment: ["dumbbells"] },
+  { id: "barbell-rdl", name: "Romanian Deadlift", icon: "🏋️", targets: ["full-body", "legs", "upper-body"], equipment: ["dumbbells"] },
   { id: "thruster", name: "Thrusters", icon: "💥", targets: ["full-body", "legs", "upper-body", "cardio"], equipment: ["dumbbells"] },
   { id: "clean-press", name: "Clean and Press", icon: "🏋️", targets: ["full-body", "legs", "upper-body", "cardio"], equipment: ["dumbbells"] },
   { id: "renegade-row", name: "Renegade Rows", icon: "🚣", targets: ["full-body", "core", "upper-body"], equipment: ["dumbbells"] },

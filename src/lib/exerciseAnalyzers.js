@@ -283,3 +283,115 @@ export function analyzeWallSit(keypoints) {
 
   return { feedback, isValid, kneeAngle, backAngle }
 }
+
+/**
+ * Analyze Romanian Deadlift (RDL) form based on keypoints
+ * Checks: hip hinge, back alignment, knee position, depth
+ */
+export function analyzeRomanianDeadlift(keypoints) {
+  const leftHip = findKeypoint(keypoints, 'left_hip')
+  const rightHip = findKeypoint(keypoints, 'right_hip')
+  const leftKnee = findKeypoint(keypoints, 'left_knee')
+  const rightKnee = findKeypoint(keypoints, 'right_knee')
+  const leftAnkle = findKeypoint(keypoints, 'left_ankle')
+  const leftShoulder = findKeypoint(keypoints, 'left_shoulder')
+  const rightShoulder = findKeypoint(keypoints, 'right_shoulder')
+
+  // Use left side by default, fallback to right
+  const hip = leftHip || rightHip
+  const knee = leftKnee || rightKnee
+  const ankle = leftAnkle || findKeypoint(keypoints, 'right_ankle')
+  const shoulder = leftShoulder || rightShoulder
+
+  // If key body parts are missing, return empty feedback
+  if (!hip || !knee || !ankle) {
+    return {
+      feedback: '',
+      isValid: false
+    }
+  }
+
+  // Calculate knee angle (hip-knee-ankle) - should be slightly bent but not too much
+  const kneeAngle = calculateAngle(hip, knee, ankle)
+
+  // Calculate back angle (shoulder-hip-knee) - should stay relatively straight
+  let backAngle = null
+  if (shoulder) {
+    backAngle = calculateAngle(shoulder, hip, knee)
+  }
+
+  // Calculate hip hinge angle (shoulder-hip-ankle) - this shows how much the hip is hinged
+  let hipHingeAngle = null
+  if (shoulder && ankle) {
+    hipHingeAngle = calculateAngle(shoulder, hip, ankle)
+  }
+
+  // Determine feedback based on angles
+  let feedback = ''
+  let isValid = true
+
+  // Knee angle check - RDL should have slight knee bend (around 150-170°), not deep squat
+  if (kneeAngle < 140) {
+    feedback = 'Keep your knees slightly bent, not too deep'
+    isValid = false
+  } else if (kneeAngle > 175) {
+    feedback = 'Bend your knees slightly for proper RDL form'
+    isValid = false
+  } else if (kneeAngle >= 150 && kneeAngle <= 170) {
+    feedback = 'Good knee position! Maintain that slight bend'
+    isValid = true
+  }
+
+  // Back alignment check - back should stay straight (angle close to 180°)
+  if (backAngle !== null) {
+    if (backAngle < 150) {
+      feedback = 'Keep your back straight - don\'t round your spine'
+      isValid = false
+    } else if (backAngle >= 150 && backAngle < 165) {
+      if (!feedback.includes('Good') && !feedback.includes('Excellent')) {
+        feedback = 'Keep your back straighter - maintain neutral spine'
+        isValid = false
+      }
+    } else if (backAngle >= 165) {
+      if (!feedback || feedback.includes('knee')) {
+        feedback = 'Excellent back position! Keep it straight'
+        isValid = true
+      }
+    }
+  }
+
+  // Hip hinge check - RDL is primarily a hip hinge movement
+  // Hip hinge angle should decrease as you lower (hip moves back)
+  if (hipHingeAngle !== null) {
+    // For a good RDL, the hip should be hinged back (angle < 180°)
+    // Too upright (angle > 175°) means not hinging enough
+    // Too much hinge (angle < 120°) might indicate going too low or losing form
+    if (hipHingeAngle > 175) {
+      feedback = 'Hinge at your hips more - push your hips back'
+      isValid = false
+    } else if (hipHingeAngle < 120) {
+      feedback = 'You\'re going very deep - make sure you can maintain back position'
+      isValid = false
+    } else if (hipHingeAngle >= 140 && hipHingeAngle <= 170) {
+      if (!feedback.includes('Excellent') && !feedback.includes('Good knee')) {
+        feedback = 'Good hip hinge! Keep pushing your hips back'
+        isValid = true
+      }
+    }
+  }
+
+  // Check shoulder position relative to hip (shoulders should stay over or slightly behind the bar)
+  if (shoulder && hip) {
+    const shoulderHipHorizontal = Math.abs(shoulder.x - hip.x)
+    const shoulderHipVertical = Math.abs(shoulder.y - hip.y)
+    
+    // For RDL, shoulders should be slightly behind hips (negative x difference or small positive)
+    // If shoulders are too far forward, user might be rounding or not hinging properly
+    if (shoulder.x > hip.x + 30) {
+      feedback = 'Keep your shoulders over or slightly behind the bar'
+      isValid = false
+    }
+  }
+
+  return { feedback, isValid, kneeAngle, backAngle, hipHingeAngle }
+}

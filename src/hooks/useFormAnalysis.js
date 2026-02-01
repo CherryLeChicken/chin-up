@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { calculateAngle, findKeypoint } from '../lib/angleUtils'
-import { analyzeSquat, analyzePushUp, analyzeWallSit } from '../lib/exerciseAnalyzers'
+import { analyzeSquat, analyzePushUp, analyzeWallSit, analyzeRomanianDeadlift } from '../lib/exerciseAnalyzers'
 
 export function useFormAnalysis(exercise) {
   const analyzeForm = useMemo(() => {
@@ -16,6 +16,8 @@ export function useFormAnalysis(exercise) {
           return analyzePushUp(keypoints)
         case 'wall-sit':
           return analyzeWallSit(keypoints)
+        case 'barbell-rdl':
+          return analyzeRomanianDeadlift(keypoints)
         default:
           return { feedback: '', isValid: false }
       }
