@@ -41,8 +41,74 @@ export function analyzeSquat(keypoints) {
   let feedback = ''
   let isValid = true
 
-  // Knee angle analysis (for squat depth)
-  if (kneeAngle > 160) {
+  // PRIORITIZE: Back alignment check first (most important for safety)
+  // If back is obviously bending too much, return early with that feedback
+  if (hipAngle !== null && hipAngle < 130) {
+    // Significantly rounded forward - critical issue, return immediately
+    return {
+      feedback: 'Keep your back straight and chest up',
+      isValid: false,
+      kneeAngle,
+      hipAngle
+    }
+  }
+
+  // Detect if upper body is bent over (parallel to ground) instead of upright
+  // Check if shoulder-hip line is too horizontal (bending at hips)
+  if (shoulder && hip && knee) {
+    // Calculate upper body angle (shoulder-hip line) relative to vertical
+    // 0° = vertical (upright), 90° = horizontal (bent over)
+    const upperBodyVerticalDiff = Math.abs(shoulder.y - hip.y)
+    const upperBodyHorizontalDiff = Math.abs(shoulder.x - hip.x)
+    const upperBodyAngleFromVertical = Math.atan2(upperBodyHorizontalDiff, upperBodyVerticalDiff) * 180 / Math.PI
+    
+    // Special case: knees are straight but upper body is bending
+    // This is bending at hips with straight legs - incorrect form
+    if (upperBodyAngleFromVertical > 50 && kneeAngle > 170) {
+      // Knees are straight (almost no bend) but upper body is bent over
+      return {
+        feedback: 'Bend the knees and keep chest up',
+        isValid: false,
+        kneeAngle,
+        hipAngle
+      }
+    }
+    
+    // If upper body is bent over (angle > 60° from vertical = almost horizontal)
+    // AND they're attempting to squat (knee angle < 170)
+    // This indicates they're bending at hips instead of sitting back
+    if (upperBodyAngleFromVertical > 60 && kneeAngle < 170) {
+      return {
+        feedback: 'Keep the upper body upright and sit back like you\'re in a chair',
+        isValid: false,
+        kneeAngle,
+        hipAngle
+      }
+    }
+  }
+
+  // Detect "good morning" pattern: back moving down but knees barely bending
+  // If knee angle is large (barely bent) but hip has moved down relative to shoulder
+  // This indicates forward lean instead of proper squatting
+  if (shoulder && hip && kneeAngle > 160) {
+    const hipShoulderHeightDiff = hip.y - shoulder.y
+    // If hip is significantly below shoulder (they've moved down) but knees aren't bending
+    // This suggests they're leaning forward rather than squatting
+    if (hipShoulderHeightDiff > 50) {
+      // Back is moving down but knees aren't bending - good morning pattern
+      return {
+        feedback: 'Keep your chest up',
+        isValid: false,
+        kneeAngle,
+        hipAngle
+      }
+    }
+  }
+
+  // Only give knee feedback if knees are BARELY bending (very shallow squat)
+  // Only flag if knee angle is extremely large (almost no bend at all)
+  if (kneeAngle > 175) {
+    // Only flag if knees are barely bending at all (extremely shallow)
     feedback = 'Bend your knees more to go deeper into the squat'
     isValid = false
   } else if (kneeAngle < 70) {
@@ -51,30 +117,33 @@ export function analyzeSquat(keypoints) {
   } else if (kneeAngle < 100) {
     feedback = 'Good form! You\'re getting deep into the squat'
     isValid = true
-  } else {
+  } else if (kneeAngle < 140) {
     feedback = 'You\'re doing great! Keep it up!'
     isValid = true
   }
-
-  // Back alignment check (if shoulder is visible)
-  if (hipAngle !== null) {
-    if (hipAngle < 150) {
-      feedback = 'Keep your back straight and chest up'
-      isValid = false
-    }
-  }
+  // For 140-175, form is acceptable - no feedback (silence is fine)
+  // If kneeAngle > 175, they're not squatting - no feedback
 
   // Knee alignment check (knee should be over ankle)
-  const kneeAnkleAlignment = Math.abs(knee.x - ankle.x)
-  const hipKneeDistance = Math.sqrt(
-    Math.pow(hip.x - knee.x, 2) + Math.pow(hip.y - knee.y, 2)
-  )
-  const alignmentRatio = kneeAnkleAlignment / (hipKneeDistance || 1)
+  // Only check if no more important issue (back alignment) was found
+  // Prevent knee alignment from overriding back issues
+  if (!feedback || isValid) {
+    const kneeAnkleAlignment = Math.abs(knee.x - ankle.x)
+    const hipKneeDistance = Math.sqrt(
+      Math.pow(hip.x - knee.x, 2) + Math.pow(hip.y - knee.y, 2)
+    )
+    const alignmentRatio = kneeAnkleAlignment / (hipKneeDistance || 1)
 
-  if (alignmentRatio > 0.3) {
-    feedback = 'Keep your knees aligned with your toes, don\'t let them cave in'
-    isValid = false
+    if (alignmentRatio > 0.6) {
+      // Only flag if knees are severely misaligned (terrible angle, injury risk)
+      // But don't override positive feedback
+      if (!isValid || !feedback) {
+        feedback = 'Keep your knees aligned with your toes, don\'t let them cave in'
+        isValid = false
+      }
+    }
   }
+  // Minor knee misalignment (ratio < 0.6) is acceptable - no feedback
 
   return { feedback, isValid, kneeAngle, hipAngle }
 }
@@ -247,20 +316,16 @@ export function analyzeWallSit(keypoints) {
   }
 
   // Back alignment check - back should be upright/vertical
+  // Be very lenient - only flag if back is extremely off the wall
   // For upright back, shoulder-hip-knee angle should be close to 180° (straight line)
   if (backAngle !== null) {
-    if (backAngle < 160) {
+    if (backAngle < 120) {
+      // Only flag if back is extremely rounded (very obvious problem)
       feedback = 'Keep your back flat against the wall and upright'
       isValid = false
-    } else if (backAngle >= 160 && backAngle < 175) {
-      // Back is mostly upright but could be better
-      if (feedback.includes('Perfect') || feedback.includes('Good form')) {
-        // Don't override positive feedback
-      } else {
-        feedback = 'Keep your back pressed flat against the wall'
-        isValid = true
-      }
     }
+    // Back misalignment (120-180) is acceptable - no feedback
+    // Don't override positive knee feedback for back issues
   }
 
   // Check if hips are low enough

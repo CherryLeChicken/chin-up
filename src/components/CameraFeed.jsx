@@ -4,6 +4,7 @@ import { useFormAnalysis } from "../hooks/useFormAnalysis";
 import { useVoiceFeedback } from "../hooks/useVoiceFeedback";
 import { usePresage } from "../hooks/usePresage";
 import { getFeedbackVariant, extractFeedbackKey } from "../lib/feedbackVariants";
+import { calculateAngle } from "../lib/angleUtils";
 
 export default function CameraFeed({ 
   exercise, 
@@ -32,6 +33,7 @@ export default function CameraFeed({
   const lastFeedbackTimeRef = useRef(0);
   const lastDetectionLogTimeRef = useRef(0);
   const feedbackHistoryRef = useRef([]); // Track recent feedback keys (max 10)
+  const lastFeedbackWasCriticalRef = useRef(false); // Track if last feedback was criticism
   const FEEDBACK_INTERVAL = 2000; // 2 seconds between feedback
   const hasPlayedStartMessageRef = useRef(false); // Track if we've played the start message
 
@@ -171,14 +173,11 @@ export default function CameraFeed({
       // Track rep for Presage
       trackRep(keypoints, analysis);
 
+      const now = Date.now();
+      const confidenceMultiplier = signalConfidence === 'low' ? 1.5 : signalConfidence === 'medium' ? 1.2 : 1.0
+      const adaptiveInterval = FEEDBACK_INTERVAL * confidenceMultiplier
+
       if (analysis.feedback && !analysis.feedback.toLowerCase().includes("position yourself")) {
-        const now = Date.now();
-        
-        // Calculate adaptive feedback interval based on signal confidence
-        // Lower confidence = longer intervals (less frequent feedback)
-        const confidenceMultiplier = signalConfidence === 'low' ? 1.5 : signalConfidence === 'medium' ? 1.2 : 1.0
-        const adaptiveInterval = FEEDBACK_INTERVAL * confidenceMultiplier
-        
         if (now - lastFeedbackTimeRef.current > adaptiveInterval) {
           // Extract feedback key and get variant (with Presage adaptation)
           const feedbackKey = extractFeedbackKey(analysis.feedback);
@@ -188,6 +187,14 @@ export default function CameraFeed({
 
           // Only speak if we got a valid variant (not null)
           if (variantFeedback) {
+            // Check if this is critical feedback (not positive)
+            const isCritical = !analysis.isValid || variantFeedback.toLowerCase().includes('keep') || 
+                              variantFeedback.toLowerCase().includes('bend') || 
+                              variantFeedback.toLowerCase().includes('lower') ||
+                              variantFeedback.toLowerCase().includes('sit back') ||
+                              variantFeedback.toLowerCase().includes('straight');
+            lastFeedbackWasCriticalRef.current = isCritical;
+            
             // Update feedback history (keep last 10 entries)
             feedbackHistoryRef.current = [feedbackKey, ...feedbackHistoryRef.current].slice(0, 10);
             
@@ -199,6 +206,38 @@ export default function CameraFeed({
           }
           // If variant is null (too many repeats), skip this feedback
         }
+      } else if (lastFeedbackWasCriticalRef.current && now - lastFeedbackTimeRef.current > adaptiveInterval) {
+        // No feedback from analyzer, but last feedback was criticism - provide encouragement
+        const encouragingMessages = [
+          'Good job',
+          'That\'s better',
+          'Looking good',
+          'Nice work',
+          'Keep it up'
+        ];
+        const message = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
+        
+        onFeedback(message);
+        speak(message, breathingRate, breathingConsistency, signalConfidence);
+        lastFeedbackTimeRef.current = now;
+        lastFeedbackWasCriticalRef.current = false; // Reset after encouragement
+      } else if (exercise === 'wall-sit' && !analysis.feedback && now - lastFeedbackTimeRef.current > 10000) {
+        // For wall sit: if no feedback for 10+ seconds, provide encouragement
+        // Wall sits are static holds, so no feedback = good form = should encourage
+        const wallSitEncouragement = [
+          'You\'re doing a good job',
+          'Great job holding',
+          'You\'re doing great',
+          'Keep it up, you\'re doing well',
+          'Nice work, keep holding',
+          'You\'re doing awesome',
+          'Excellent work'
+        ];
+        const message = wallSitEncouragement[Math.floor(Math.random() * wallSitEncouragement.length)];
+        
+        onFeedback(message);
+        speak(message, breathingRate, breathingConsistency, signalConfidence);
+        lastFeedbackTimeRef.current = now;
       }
     }
   }, [keypoints, isActive, exercise, analyzeForm, speak, onFeedback, isLoading, breathingRate, breathingConsistency, signalConfidence, trackRep]);
@@ -304,6 +343,82 @@ export default function CameraFeed({
         ctx.fill();
       }
     });
+
+    // Calculate and display angles at major joints
+    ctx.font = "12px Arial";
+    ctx.fillStyle = "#ffd700"; // Gold color for angle text
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+
+    // Left elbow angle (left_shoulder - left_elbow - left_wrist)
+    const leftShoulder = findKeypoint(keypoints, "left_shoulder");
+    const leftElbow = findKeypoint(keypoints, "left_elbow");
+    const leftWrist = findKeypoint(keypoints, "left_wrist");
+    if (leftShoulder && leftElbow && leftWrist) {
+      const elbowAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
+      ctx.strokeText(`${Math.round(elbowAngle)}°`, leftElbow.x + 10, leftElbow.y - 10);
+      ctx.fillText(`${Math.round(elbowAngle)}°`, leftElbow.x + 10, leftElbow.y - 10);
+    }
+
+    // Right elbow angle (right_shoulder - right_elbow - right_wrist)
+    const rightShoulder = findKeypoint(keypoints, "right_shoulder");
+    const rightElbow = findKeypoint(keypoints, "right_elbow");
+    const rightWrist = findKeypoint(keypoints, "right_wrist");
+    if (rightShoulder && rightElbow && rightWrist) {
+      const elbowAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
+      ctx.strokeText(`${Math.round(elbowAngle)}°`, rightElbow.x + 10, rightElbow.y - 10);
+      ctx.fillText(`${Math.round(elbowAngle)}°`, rightElbow.x + 10, rightElbow.y - 10);
+    }
+
+    // Left knee angle (left_hip - left_knee - left_ankle)
+    const leftHip = findKeypoint(keypoints, "left_hip");
+    const leftKnee = findKeypoint(keypoints, "left_knee");
+    const leftAnkle = findKeypoint(keypoints, "left_ankle");
+    if (leftHip && leftKnee && leftAnkle) {
+      const kneeAngle = calculateAngle(leftHip, leftKnee, leftAnkle);
+      ctx.strokeText(`${Math.round(kneeAngle)}°`, leftKnee.x + 10, leftKnee.y + 20);
+      ctx.fillText(`${Math.round(kneeAngle)}°`, leftKnee.x + 10, leftKnee.y + 20);
+    }
+
+    // Right knee angle (right_hip - right_knee - right_ankle)
+    const rightHip = findKeypoint(keypoints, "right_hip");
+    const rightKnee = findKeypoint(keypoints, "right_knee");
+    const rightAnkle = findKeypoint(keypoints, "right_ankle");
+    if (rightHip && rightKnee && rightAnkle) {
+      const kneeAngle = calculateAngle(rightHip, rightKnee, rightAnkle);
+      ctx.strokeText(`${Math.round(kneeAngle)}°`, rightKnee.x + 10, rightKnee.y + 20);
+      ctx.fillText(`${Math.round(kneeAngle)}°`, rightKnee.x + 10, rightKnee.y + 20);
+    }
+
+    // Left hip angle (left_shoulder - left_hip - left_knee) - back alignment
+    if (leftShoulder && leftHip && leftKnee) {
+      const hipAngle = calculateAngle(leftShoulder, leftHip, leftKnee);
+      ctx.strokeText(`${Math.round(hipAngle)}°`, leftHip.x - 30, leftHip.y);
+      ctx.fillText(`${Math.round(hipAngle)}°`, leftHip.x - 30, leftHip.y);
+    }
+
+    // Right hip angle (right_shoulder - right_hip - right_knee) - back alignment
+    if (rightShoulder && rightHip && rightKnee) {
+      const hipAngle = calculateAngle(rightShoulder, rightHip, rightKnee);
+      ctx.strokeText(`${Math.round(hipAngle)}°`, rightHip.x + 10, rightHip.y);
+      ctx.fillText(`${Math.round(hipAngle)}°`, rightHip.x + 10, rightHip.y);
+    }
+
+    // Left shoulder angle (left_ear - left_shoulder - left_hip)
+    const leftEar = findKeypoint(keypoints, "left_ear");
+    if (leftEar && leftShoulder && leftHip) {
+      const shoulderAngle = calculateAngle(leftEar, leftShoulder, leftHip);
+      ctx.strokeText(`${Math.round(shoulderAngle)}°`, leftShoulder.x - 30, leftShoulder.y - 10);
+      ctx.fillText(`${Math.round(shoulderAngle)}°`, leftShoulder.x - 30, leftShoulder.y - 10);
+    }
+
+    // Right shoulder angle (right_ear - right_shoulder - right_hip)
+    const rightEar = findKeypoint(keypoints, "right_ear");
+    if (rightEar && rightShoulder && rightHip) {
+      const shoulderAngle = calculateAngle(rightEar, rightShoulder, rightHip);
+      ctx.strokeText(`${Math.round(shoulderAngle)}°`, rightShoulder.x + 10, rightShoulder.y - 10);
+      ctx.fillText(`${Math.round(shoulderAngle)}°`, rightShoulder.x + 10, rightShoulder.y - 10);
+    }
   };
 
   const showPreview = !isActive && exercise && previewVideos[exercise];
