@@ -470,6 +470,23 @@ export default function CameraFeed({
       <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${showPreview ? 'opacity-0' : ''}`} />
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
       
+      {/* Mini Preview Window - Shown in bottom corner when active and exercise is selected */}
+      {isActive && exercise && previewVideos[exercise] && (
+        <div className="absolute bottom-4 right-4 w-48 aspect-video bg-slate-900 rounded-lg border-2 border-cyan-500/50 overflow-hidden shadow-2xl z-30">
+          <video
+            src={previewVideos[exercise]}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute top-1 left-2 bg-slate-900/80 px-1.5 py-0.5 rounded text-[8px] text-cyan-400 font-bold uppercase tracking-wider">
+            Demo
+          </div>
+        </div>
+      )}
+      
       {exercise && !showPreview && (
         <div className="absolute top-4 left-4 bg-slate-900/80 px-4 py-2 rounded-lg border border-slate-700">
           <span className="text-cyan-400 font-bold capitalize">{exercise}</span>
